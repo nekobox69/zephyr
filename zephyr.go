@@ -72,6 +72,10 @@ func (z *Zephyr) SetWrapper(wrapper wrapperFuc) {
 	z.wrapper = wrapper
 }
 
+func (z *Zephyr)SetProfile(profile *Profile)  {
+	z.profile=profile
+}
+
 func (z *Zephyr) GetLogger() *logrus.Logger {
 	return z.logger
 }
