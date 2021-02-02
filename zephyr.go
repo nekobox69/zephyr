@@ -33,6 +33,7 @@ type Zephyr struct {
 	wrapper         wrapperFuc
 }
 
+// NewZephyr new Zephyr obj.
 func NewZephyr(logger *logrus.Logger) *Zephyr {
 	z := Zephyr{logger: logger}
 	if nil == z.logger {
@@ -47,39 +48,48 @@ func (z *Zephyr) SetCros(cros bool) {
 	z.cros = cros
 }
 
+// SetErrResp set default err response.
 func (z *Zephyr) SetErrResp(resp Resp) {
 	z.resp = &resp
 }
 
+// AddFilter add filter.
 func (z *Zephyr) AddFilter(filter Filter) *Zephyr {
 	z.filter = append(z.filter, filter)
 	return z
 }
 
+// AddHandler add handler.
 func (z *Zephyr) AddHandler(r Action) {
 	z.handlers = append(z.handlers, r)
 }
 
+// SetPreHandler set preHandler.
 func (z *Zephyr) SetPreHandler(preHandler preHandlerFunc) {
 	z.preHandler = preHandler
 }
 
+// SetAfterCompletion set afterCompletion.
 func (z *Zephyr) SetAfterCompletion(afterCompletion afterCompletionFunc) {
 	z.afterCompletion = afterCompletion
 }
 
+// SetWrapper set ResponseWriter wrapper
 func (z *Zephyr) SetWrapper(wrapper wrapperFuc) {
 	z.wrapper = wrapper
 }
 
+// SetProfile set service profile
 func (z *Zephyr)SetProfile(profile *Profile)  {
 	z.profile=profile
 }
 
+// GetLogger get logger
 func (z *Zephyr) GetLogger() *logrus.Logger {
 	return z.logger
 }
 
+// Resp response body
 type Resp struct {
 	Code int
 	Msg  []byte

@@ -6,9 +6,10 @@ import (
 	"log"
 	"net/http"
 
-	"zephyr"
+	"github.com/nekobox69/zephyr"
 )
 
+// TestHandler test handler.
 func TestHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hello"))
 }

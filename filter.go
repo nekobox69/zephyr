@@ -20,13 +20,14 @@ type Request struct {
 	Method string
 }
 
+// Filter 过滤器.
 type Filter struct {
 	Trials TrialItem
 	Fit    Fit
 	Err    func(w *http.ResponseWriter)
 }
 
-// Filter filter
+// Fit doFilter
 type Fit interface {
 	DoFilter(request *Request, prerequisite TrialItem) (bool, error)
 }
