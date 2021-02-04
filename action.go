@@ -34,7 +34,7 @@ func (a *Action) fit(w http.ResponseWriter, r *http.Request, logger *logrus.Logg
 				} else {
 					if nil != resp {
 						w.WriteHeader((*resp).Code)
-						w.Write((*resp).Msg)
+						_, _ = w.Write((*resp).Msg)
 					} else {
 						w.WriteHeader(http.StatusBadRequest)
 					}
@@ -47,7 +47,7 @@ func (a *Action) fit(w http.ResponseWriter, r *http.Request, logger *logrus.Logg
 				} else {
 					if nil != resp {
 						w.WriteHeader((*resp).Code)
-						w.Write((*resp).Msg)
+						_, _ = w.Write((*resp).Msg)
 					} else {
 						w.WriteHeader(http.StatusBadRequest)
 					}

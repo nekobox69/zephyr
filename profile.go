@@ -46,12 +46,14 @@ func (p *Profile) Description() string {
 
 // Handler url handler
 func (p *Profile) Handler(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 	b, err := json.Marshal(p)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write(b)
+	_, _ = w.Write(b)
 }

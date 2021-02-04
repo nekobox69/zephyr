@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"regexp"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -80,8 +81,8 @@ func (z *Zephyr) SetWrapper(wrapper wrapperFuc) {
 }
 
 // SetProfile set service profile
-func (z *Zephyr)SetProfile(profile *Profile)  {
-	z.profile=profile
+func (z *Zephyr) SetProfile(profile *Profile) {
+	z.profile = profile
 }
 
 // GetLogger get logger
@@ -103,6 +104,29 @@ func (z *Zephyr) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ip, _, _ = net.SplitHostPort(r.RemoteAddr)
 		r.Header.Set("X-Real-IP", ip)
 	}
+	defer func() {
+		if err := recover(); nil != err {
+			z.logger.Errorf("%+v", err)
+			debug.PrintStack()
+			if nil != z.resp {
+				w.WriteHeader((*z.resp).Code)
+				_, _ = w.Write((*z.resp).Msg)
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+		}
+		endTime := unixMillisecond()
+		if nil == z.afterCompletion {
+			z.logger.WithFields(logrus.Fields{
+				"ip":     ip,
+				"url":    r.URL.Path,
+				"method": r.Method,
+				"cost":   fmt.Sprintf("%d ms", endTime-startTime),
+			}).Info("OK")
+		} else {
+			z.afterCompletion(&w, r, endTime-startTime)
+		}
+	}()
 	if z.cros {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "*")
@@ -139,7 +163,7 @@ func (z *Zephyr) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if nil != z.preHandler && !z.preHandler(&w, r) {
 					if nil != z.resp {
 						w.WriteHeader((*z.resp).Code)
-						w.Write((*z.resp).Msg)
+						_, _ = w.Write((*z.resp).Msg)
 					} else {
 						w.WriteHeader(http.StatusBadRequest)
 					}
@@ -149,7 +173,7 @@ func (z *Zephyr) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if nil != v.PreHandler && !v.PreHandler(&w, r) {
 					if nil != z.resp {
 						w.WriteHeader((*z.resp).Code)
-						w.Write((*z.resp).Msg)
+						_, _ = w.Write((*z.resp).Msg)
 					} else {
 						w.WriteHeader(http.StatusBadRequest)
 					}
@@ -167,18 +191,6 @@ func (z *Zephyr) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 End:
-	endTime := unixMillisecond()
-	if nil == z.afterCompletion {
-		z.logger.WithFields(logrus.Fields{
-			"ip":     ip,
-			"url":    r.URL.Path,
-			"method": r.Method,
-			"cost":   fmt.Sprintf("%d ms", endTime-startTime),
-		}).Info("OK")
-	} else {
-		z.afterCompletion(&w, r, endTime-startTime)
-	}
-
 	if trialFailed {
 		return
 	}
@@ -209,7 +221,7 @@ func (z *Zephyr) globalFilter(w http.ResponseWriter, r *http.Request) bool {
 				} else {
 					if nil != z.resp {
 						w.WriteHeader((*z.resp).Code)
-						w.Write((*z.resp).Msg)
+						_, _ = w.Write((*z.resp).Msg)
 					} else {
 						w.WriteHeader(http.StatusBadRequest)
 					}
@@ -222,7 +234,7 @@ func (z *Zephyr) globalFilter(w http.ResponseWriter, r *http.Request) bool {
 				} else {
 					if nil != z.resp {
 						w.WriteHeader((*z.resp).Code)
-						w.Write((*z.resp).Msg)
+						_, _ = w.Write((*z.resp).Msg)
 					} else {
 						w.WriteHeader(http.StatusBadRequest)
 					}
@@ -258,24 +270,24 @@ func readRequest(r *http.Request) (*Request, error) {
 			if nil != err {
 				return nil, err
 			}
-			copy, err := http.NewRequest("POST", "", bytes.NewReader(body))
+			copyReq, err := http.NewRequest("POST", "", bytes.NewReader(body))
 			if nil != err {
 				return nil, err
 			}
-			copy.Header = r.Header
-			err = copy.ParseMultipartForm(32 << 20)
+			copyReq.Header = r.Header
+			err = copyReq.ParseMultipartForm(32 << 20)
 			if nil != err {
-				copy.Body.Close()
+				_ = copyReq.Body.Close()
 				return nil, err
 			}
-			copy.Body.Close()
+			_ = copyReq.Body.Close()
 			return &Request{Header: r.Header, Query: r.PostForm, Method: r.Method}, nil
 		default:
 			body, err := ioutil.ReadAll(r.Body)
 			if nil != err {
 				return nil, err
 			}
-			r.Body.Close()
+			_ = r.Body.Close()
 			r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 			return &Request{Header: r.Header, Query: r.URL.Query(), Method: r.Method, Body: body}, nil
 		}
